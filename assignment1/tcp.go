@@ -1,8 +1,8 @@
 package assignment1
-
 import (
 	"net"
 	"os"
+	"sync"
 	"strings"
 	"fmt"
 	"strconv"
@@ -26,6 +26,7 @@ func server() {
 	m = make(map[string]Node)
 	service := ":9011"
 	
+
 	tcpAddr, err := net.ResolveTCPAddr("ip4", service)
 	checkError(err)
 
@@ -46,7 +47,7 @@ func server() {
 func handleClient(conn net.Conn) {
 	
 	defer conn.Close()
-
+	var mutex = &sync.Mutex{}
 	buf:=make([]byte,1024)
 
 	for {		
@@ -59,7 +60,9 @@ func handleClient(conn net.Conn) {
 
 		switch string(s[0]) {
 		case "set":
+			 mutex.Lock()	
 			 set_body(s)
+			 mutex.Unlock()	
 				_, err2 := conn.Write([]byte("OK\r\n"))
 				if err2 != nil {
 					return
@@ -88,15 +91,16 @@ func handleClient(conn net.Conn) {
 			}
 		case "delete":
 				_,ok:=m[s[1]]
+				mutex.Lock()	
 				delete(m,string(s[1]))
-				
+				mutex.Unlock()	
 				if ok {
 					_, err2 := conn.Write([]byte("DELETED\r\n"))
 					if err2 != nil {
 						return
 					} 
 				}else{
-					_, err2 := conn.Write([]byte("Error"))
+					_, err2 := conn.Write([]byte("Error1"))
 					if err2 != nil {
 						return
 				}
@@ -117,13 +121,14 @@ func set_body(s []string) {
 		fmt.Println("sa")	
 		} 
 		_,ok:=m[s[1]]
+		
 		if !ok {
 			m[s[1]]=Node{int64(int1),int64(int2),k[1],int64(1)}
 		}else{
 			val:=m[s[1]].version
 			m[s[1]]=Node{int64(int1),int64(int2),k[1],val+1}
 		}
-	//return false		
+		
 }
 
 func checkError(err error) {
