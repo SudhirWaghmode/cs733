@@ -1,7 +1,7 @@
 package assignment1
-
 import (
 	"net"
+	"time"	
 	"fmt"
 	"testing"
 )
@@ -12,72 +12,88 @@ func TestMain(t *testing.T) {
 
 func TestAbc(t *testing.T){
 
-	for i := 1; i <= 10; i++ {
-      go code(t)
+	for i := 1; i <= 5; i++ {
+      go code(t,i)
     }
-	
+     time.Sleep(time.Second*2)
 
 }
 
-func code(t *testing.T){
+func code(t *testing.T,i int){
 	tcpAddr, err := net.ResolveTCPAddr("tcp", "localhost:9011")
 	checkError(err)
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	checkError(err)
-
-	if  !set(conn) { 
+	fmt.Println(i)
+	if  !set(conn,i) { 
 		t.Error(fmt.Sprintf("Couldn't Insert data\n"))
 	}
 
-	if get(conn) {
+	if get(conn,i) {
 		t.Error(fmt.Sprintf("ERRNOTFOUND\r\n"))
 	}
 	
-	if getm(conn){
+	if getm(conn,i){
 		t.Error(fmt.Sprintf("ERRNOTFOUND\r\n"))
 	}
 
-	if delete1(conn){
+	if delete1(conn,i){
 
 	 	t.Error(fmt.Sprintf("ERRNOTFOUND\r\n"))	
 	 }
 }
-func delete1(conn net.Conn) (bool){
-		
-		_,_ = conn.Write([]byte("delete x/y/z"))
+func delete1(conn net.Conn,i int) (bool){
+
+		a:=[]string{"get a1",
+		"get a2",
+		"get a3",
+		"get a4",
+		"get a5"}
+		_,_ = conn.Write([]byte(a[i-1]))
 
 		buf:=make([]byte,1024)
 
 		n,_ := conn.Read(buf[0:])
 		
-
+		fmt.Println(string(buf[:n]))
 		if string(buf[0:n])=="Error" {
 			return true
 		}
 			return false
 }
-func getm(conn net.Conn) (bool){
+func getm(conn net.Conn,i int) (bool){
 		
-		_,_ = conn.Write([]byte("getm x/y/z"))
+		a:=[]string{"get a1",
+		"get a2",
+		"get a3",
+		"get a4",
+		"get a5"}
+		_,_ = conn.Write([]byte(a[i-1]))
 
 		buf:=make([]byte,1024)
 
 		n,_ := conn.Read(buf[0:])
-		
+		fmt.Println(string(buf[:n]))
 		if string(buf[0:n])=="Error" {
 			return true
 		}
 			return false
 }
-func set(conn net.Conn) (bool){
+func set(conn net.Conn,i int) (bool){
 	
-		_,_ = conn.Write([]byte("set x/y/z 200 10\r\nabcdefghij"))
+		a:=[]string{"set a1 200 3\r\nabc",
+		"set a2 200 3\r\ncde",
+		"set a3 200 3\r\nefg",
+		"set a4 200 3\r\nhij",
+		"set a5 200 3\r\nklm"}
+		
+		_,_ = conn.Write([]byte(a[i-1]))
 
 		buf:=make([]byte,1024)
 
 		n,_ := conn.Read(buf[0:])
-		
+		fmt.Println(string(buf[:n]))
 		if string(buf[0:n])=="OK\r\n" {
 			return true
 		}
@@ -85,9 +101,15 @@ func set(conn net.Conn) (bool){
 				
 }
 
-func get(conn net.Conn) (bool){
+func get(conn net.Conn,i int) (bool){
 		
-		_,_ = conn.Write([]byte("get x/y/z"))
+		a:=[]string{"get a1",
+		"get a2",
+		"get a3",
+		"get a4",
+		"get a5"}
+
+		_,_ = conn.Write([]byte(a[i-1]))
 
 		buf:=make([]byte,1024)
 
