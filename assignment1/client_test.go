@@ -1,4 +1,5 @@
 package assignment1
+
 import (
 	"net"
 	"time"	
@@ -25,8 +26,12 @@ func code(t *testing.T,i int){
 
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	checkError(err)
-	fmt.Println(i)
+	
 	if  !set(conn,i) { 
+		t.Error(fmt.Sprintf("Couldn't Insert data\n"))
+	}
+
+	if  !cas(conn,i) { 
 		t.Error(fmt.Sprintf("Couldn't Insert data\n"))
 	}
 
@@ -56,7 +61,7 @@ func delete1(conn net.Conn,i int) (bool){
 
 		n,_ := conn.Read(buf[0:])
 		
-		fmt.Println(string(buf[:n]))
+
 		if string(buf[0:n])=="Error" {
 			return true
 		}
@@ -74,11 +79,33 @@ func getm(conn net.Conn,i int) (bool){
 		buf:=make([]byte,1024)
 
 		n,_ := conn.Read(buf[0:])
-		fmt.Println(string(buf[:n]))
+
 		if string(buf[0:n])=="Error" {
 			return true
 		}
 			return false
+}
+func cas(conn net.Conn,i int) (bool){
+	
+		a:=[]string{"cas a1 200 2 3\r\ncba",
+		"cas a2 100 1 3\r\nedc",
+		"cas a3 100 2 3\r\ngfe",
+		"cas a4 100 1 3\r\njih",
+		"cas a5 100 2 3\r\nmlk"}
+		
+		_,_ = conn.Write([]byte(a[i-1]))
+
+		buf:=make([]byte,1024)
+
+		n,_ := conn.Read(buf[0:])
+		
+		if string(buf[0:n])=="OK\r\n" {
+			
+			fmt.Println(string(buf[:n]))
+		}
+			return true
+			//return false
+				
 }
 func set(conn net.Conn,i int) (bool){
 	
@@ -93,7 +120,7 @@ func set(conn net.Conn,i int) (bool){
 		buf:=make([]byte,1024)
 
 		n,_ := conn.Read(buf[0:])
-		fmt.Println(string(buf[:n]))
+
 		if string(buf[0:n])=="OK\r\n" {
 			return true
 		}
