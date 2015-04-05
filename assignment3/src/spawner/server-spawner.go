@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"log"
+	"log"
 	"os"
 	"os/exec"
 	"sync"
@@ -17,12 +17,12 @@ func handleErr(err error) {
 
 func main() {
 
-	/*path, err1 := exec.LookPath("program")
+	path, err1 := exec.LookPath("program")
 	
 	if err1 != nil {
 		log.Fatal("Path not set properly")
-	}*/
-	path := "/home/sudhir/go/bin/program"
+	}
+	//path := "/home/sudhir/go/bin/program"
 		
 	wg.Add(1)
 	
