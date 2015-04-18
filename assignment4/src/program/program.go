@@ -594,18 +594,23 @@ func (r *Raft) ClientListener(listener net.Conn) {
 				}//end of for
 	}//end of infinite for
 }
-
+func check(e error) {
+    if e != nil {
+		log.Print("Error in creating file: ", e)
+    }
+}
 func PrintKVStore(){
-
+str := "dat"+strconv.Itoa(r.id)
+	log.Println(str)
+	f, err := os.Create(str)
+    check(err)
+   defer f.Close()
 	time.Sleep(time.Second * 32)
-//	log.Println(r.id," : ",r.currentTerm,":",r.votedTerm)
-/*	if r.id % 2 == 0 {
 	//		log.Println("Here it goes size of data : ",len(r.log.Entries))
 	for i:=0;i<len(r.log.Entries);i++{
-			log.Println(r.id," Data:",string(r.log.Entries[i].Command))
-			//	log.Println(raft.KVStore[m])
-			}//end of for
-	}//end of if*/
+				_, err := f.Write([]byte(r.log.Entries[i].Command))
+			    check(err)		
+	}//end of for
 }
 // Initialize the server
 func (r *Raft) Init(config *ClusterConfig, thisServerId int) {
