@@ -16,7 +16,7 @@ Text string
 Conn net.Conn
 }
 type LogEntry interface {
-Term_() int
+//Term_() int
 Lsn() Lsn
 Data() []byte
 Committed() bool
@@ -29,7 +29,7 @@ Commit(sequenceNumber Lsn, conn net.Conn)
 var KVStore = make(map[string]Value)
 var Input_ch = make(chan String_Conn, 10000)
 var Append_ch = make(chan LogEntry, 10000)
-var Commit_ch = make(chan LogEntry, 10000)
+var Commit_ch = make(chan Lsn, 10000)
 var Output_ch = make(chan String_Conn, 10000)
 var ElectionTimer_ch = make(chan int,10000)
 var Connection_ch = make(chan int,10000)

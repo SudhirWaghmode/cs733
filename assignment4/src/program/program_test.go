@@ -75,7 +75,7 @@ end_ch <- id
 }
 // ClientSpawner spawns n concurrent clients for executing the given testcases. It ends when all of the clients are finished.
 func ClientSpawner(t *testing.T, testCases []TestCase, n int) {
-		end_ch = make(chan int, 5*n)
+		end_ch = make(chan int, n)
 		// {input, expected output, reply expected}
 		for i := 0; i<n; i++ {
 			go SpawnClient(t, i, testCases)
@@ -89,12 +89,12 @@ func ClientSpawner(t *testing.T, testCases []TestCase, n int) {
 }
 func TestCase1(t *testing.T) {
 // Number of concurrent clients
-var n = 1// ---------- set the values of different keys -----------
+var n = 2// ---------- set the values of different keys -----------
 var testCases = []TestCase {
 {"set alpha 0 10\r\nI am ALPHA\r\n", "", true},
 {"set beta 0 9 noreply\r\nI am BETA\r\n", "", false},
 {"set gamma 0 10\r\nI am GAMMA\r\n", "", true},
-{"set theta 10 10 noreply\r\nI am THETA\r\n", "", false},
+{"set theta 9 10 noreply\r\nI am THETA\r\n", "", false},
 }
 ClientSpawner(t, testCases, n)
 // ---------- get theta ----------------------------------

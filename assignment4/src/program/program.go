@@ -57,7 +57,36 @@ func  AppendCaller() {
 			raft.No_Append <- no
 		}//end of outer for
 }
-
+func  CommitCaller() {
+	for {
+		lsn := <-raft.Commit_ch
+		raft.C2 <- 1
+		// Commit it to everyone's KV Store
+		for i:=0; i<len(r.clusterConfig.Servers); i++ {
+			if i == r.id { continue }
+			args := &CommitRPCArgs{lsn,r.id}
+			var reply string
+			
+				rr := make(chan error, 1)
+				go func() { rr <- r.clusterConfig.Servers[i].Client.Call("RPC.CommitRPC", args, &reply) } ()
+				select{
+					case err := <-rr://
+			//			err := r.clusterConfig.Servers[i].Client.Call("RPC.CommitRPC", args, &reply);
+						if err != nil {	
+							log.Println("[Server] CommitRPC Error:", err)
+						}
+					case <-time.After(100*time.Millisecond):
+						continue //log.Println("Heartbeat reply not got ",i)
+				}// inner select loop			
+		
+		//	err := r.clusterConfig.Servers[i].Client.Call("RPC.CommitRPC", args, &reply)
+		//	if err != nil {
+		//	log.Println("[Server] CommitRPC Error:", err)
+		//	}
+	//	 log.Print("[Server_commit_call] ", reply, " from ", r.clusterConfig.Servers[i].LogPort)
+		}//end of inner for
+	}//end of outer for
+} // end of CommirCaller
 //sends heartbeat to followers on regular interval
 func SendHeartbeat(){
 
@@ -227,7 +256,7 @@ func Trim(input []byte) []byte {
 }//end of trim function
 
 var r *Raft // Contains the server details
-
+/*
 func  CommitCaller() {
 	for {
 		
@@ -266,12 +295,12 @@ func  CommitCaller() {
 					}
 				} //end of j for
 
-				*/	
+				///* //have brace	
 		}//end of inner for
 	
 	}//end of infinite for
 } // end of CommirCaller
-
+*/
 	// ----------------------
 type LogEntry_ struct {
 	Term int
@@ -367,13 +396,17 @@ type AppendRPCArgs struct {
 	Entry raft.LogEntry
 	LeaderId int
 }
-
+/*
 type CommitRPCArgs struct {
 	Entry_pre LogEntry_
 	Entry_cur LogEntry_
 	LeaderId int
 }
-
+*/
+type CommitRPCArgs struct {
+	Sequencenumber raft.Lsn
+	LeaderId int
+}
 
 type RPC struct {
 }
@@ -414,11 +447,20 @@ func (a *RPC) AppendRPC(args *AppendRPCArgs, reply *string) error {
 }
 
 //Leader ask follower to commits entry which is replicated on majority server
+/*
 func (a *RPC) CommitRPC(args *CommitRPCArgs, reply *bool) error {
 	raft.ElectionTimer_ch <- args.LeaderId
 	flag := r.log.Commit_follower(args.Entry_pre,args.Entry_cur,nil)
 	*reply=flag
 	log.Println(*reply)
+	return nil
+}
+*/
+func (a *RPC) CommitRPC(args *CommitRPCArgs, reply *string) error {
+	raft.ElectionTimer_ch <- args.LeaderId
+	r.log.Commit(args.Sequencenumber, nil) // listener: nil - means that it is not supposed to reply back to the client
+	*reply = "CACK " +strconv.FormatUint(uint64(args.Sequencenumber),10)
+		log.Println(*reply)
 	return nil
 }
 
@@ -540,7 +582,7 @@ func (r *Raft) ClientListener(listener net.Conn) {
 							log.Println(r.id," No_Append: ",append_no)
 							if append_no > (N+1)/2{ 
 								r.log.Commit(r.GetServer(r.id).LsnToCommit, listener) //commit in its own log
- 								raft.Commit_ch <- logentry
+ 								raft.Commit_ch <- logentry.Lsn()
 						    }
 						}//ends inner if
 					} else { break 	} //end of outer if
