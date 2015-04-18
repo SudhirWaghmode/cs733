@@ -14,6 +14,7 @@ import (
 "math/rand"
 )
 
+var mutex = &sync.Mutex{}
 var wg sync.WaitGroup			//adding wait group for synchronization between the go routines
 var N int = 5					// Number of servers
 var Heartbeat_ch = make(chan HeartbeatRPCArgs, 10000)
@@ -49,7 +50,7 @@ func  AppendCaller() {
 						if err != nil {	
 							log.Println("[Server] AppendRPC Error:", err)
 						}
-					case <-time.After(100*time.Millisecond):
+					case <-time.After(1000*time.Millisecond):
 						log.Println("AppendRPC time out for: ",i)
 						continue //log.Println("Heartbeat reply not got ",i)
 				}// inner select loop
@@ -336,9 +337,11 @@ func (s *SharedLog_) Init() {
 
 // Adds the data into logentry
 func (s *SharedLog_) Append(data []byte) (LogEntry_, error) {
+	mutex.Lock()
 	log := LogEntry_{r.currentTerm, s.LsnLogToBeAdded, data, false}
 	s.Entries = append(s.Entries, log)
 	s.LsnLogToBeAdded++
+	mutex.Unlock()
 	return log, nil
 }
 
@@ -431,7 +434,7 @@ func (a *RPC) HeartbeatRPC(args *HeartbeatRPCArgs, reply *string) error {
 	r.clusterConfig.Servers[args.LeaderId].isLeader=1
 	r.clusterConfig.LeaderId=args.LeaderId		
 	*reply = "ACK "
-	log.Print(r.id ,"got HeartbeatRPC "," from ",args.LeaderId)
+	//log.Print(r.id ,"got HeartbeatRPC "," from ",args.LeaderId)
 	return nil
 }
 
@@ -442,7 +445,7 @@ func (a *RPC) AppendRPC(args *AppendRPCArgs, reply *string) error {
 	entry := args.Entry
 	r.log.Append(entry.Data())
 	*reply = "ACK " +strconv.FormatUint(uint64(entry.Lsn()),10)
-	log.Println(*reply)
+	//log.Println(*reply)
 	return nil
 }
 
@@ -460,7 +463,7 @@ func (a *RPC) CommitRPC(args *CommitRPCArgs, reply *string) error {
 	raft.ElectionTimer_ch <- args.LeaderId
 	r.log.Commit(args.Sequencenumber, nil) // listener: nil - means that it is not supposed to reply back to the client
 	*reply = "CACK " +strconv.FormatUint(uint64(args.Sequencenumber),10)
-		log.Println(*reply)
+	//	log.Println(*reply)
 	return nil
 }
 
@@ -579,7 +582,7 @@ func (r *Raft) ClientListener(listener net.Conn) {
 							raft.Append_ch <- logentry                      //call appendcalller() 
 							var append_no int 
 							append_no = <-raft.No_Append					//recives no of server on which log relicated
-							log.Println(r.id," No_Append: ",append_no)
+						//	log.Println(r.id," No_Append: ",append_no)
 							if append_no > (N+1)/2{ 
 								r.log.Commit(r.GetServer(r.id).LsnToCommit, listener) //commit in its own log
  								raft.Commit_ch <- logentry.Lsn()
@@ -595,14 +598,14 @@ func (r *Raft) ClientListener(listener net.Conn) {
 func PrintKVStore(){
 
 	time.Sleep(time.Second * 32)
-	log.Println(r.id," : ",r.currentTerm,":",r.votedTerm)
-	if r.id % 2 == 0 {
+//	log.Println(r.id," : ",r.currentTerm,":",r.votedTerm)
+/*	if r.id % 2 == 0 {
 	//		log.Println("Here it goes size of data : ",len(r.log.Entries))
 	for i:=0;i<len(r.log.Entries);i++{
 			log.Println(r.id," Data:",string(r.log.Entries[i].Command))
 			//	log.Println(raft.KVStore[m])
 			}//end of for
-	}//end of if
+	}//end of if*/
 }
 // Initialize the server
 func (r *Raft) Init(config *ClusterConfig, thisServerId int) {
@@ -651,7 +654,7 @@ func ConnectToServers(i int, isLeader int,Servers []ServerConfig) {
 	for {
 		client, err = rpc.Dial("tcp", "localhost:" + strconv.Itoa(9001+2*i))
 		if err == nil {
-			log.Print("Connected to ", strconv.Itoa(9001+2*i))
+			//log.Print("Connected to ", strconv.Itoa(9001+2*i))
 			raft.Conection_ch <- 1
 			break
 			}

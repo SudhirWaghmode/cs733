@@ -36,22 +36,19 @@ func SpawnClient(t *testing.T, id int, testCases []TestCase) {
 defer conn.Close()
 // Execute the testcases
 		for i:=0; i<len(testCases); i++ {
-				// Now send data
-			//log.Println("Done : ", i)		
 
 				input := testCases[i].input
 				exp_output := testCases[i].output
 				expectReply := testCases[i].expectReply
 				conn.Write([]byte(input))
-				// time.Sleep(750 * time.Millisecond)
+				
 				if !expectReply {
 					continue
 				}
 				reply := make([]byte, 1000)
 				conn.Read(reply)
 				str := string(reply)
-					//log.Println(str)
-/////////////////////////////////				
+				
 				if "ERR_REDIRECT" == str[0:12] { 
 							tcpAddr, _ := net.ResolveTCPAddr("tcp", "localhost:"+str[21:25])
 							conn, err = net.DialTCP("tcp", nil, tcpAddr)
@@ -62,10 +59,9 @@ defer conn.Close()
 					i--
 					continue	
 				}
-/////////////////////////////////				
-				// log.Print("[Client]:",string(reply))
+
 				if exp_output != "" { reply = reply[0:len(exp_output)] }
-				// if expected output is "", then don't check
+
 				if exp_output!="" && string(reply) != exp_output {
 					t.Error(fmt.Sprintf("Input: %q, Expected Output: %q, Actual Output: %q", input, exp_output, string(reply)))
 				}
@@ -75,7 +71,7 @@ end_ch <- id
 }
 // ClientSpawner spawns n concurrent clients for executing the given testcases. It ends when all of the clients are finished.
 func ClientSpawner(t *testing.T, testCases []TestCase, n int) {
-		end_ch = make(chan int, n)
+		end_ch = make(chan int, 5*n)
 		// {input, expected output, reply expected}
 		for i := 0; i<n; i++ {
 			go SpawnClient(t, i, testCases)
@@ -89,15 +85,17 @@ func ClientSpawner(t *testing.T, testCases []TestCase, n int) {
 }
 func TestCase1(t *testing.T) {
 // Number of concurrent clients
-var n = 2// ---------- set the values of different keys -----------
+var n = 5 // ---------- set the values of different keys -----------
+fmt.Println("No:", n)
 var testCases = []TestCase {
 {"set alpha 0 10\r\nI am ALPHA\r\n", "", true},
 {"set beta 0 9 noreply\r\nI am BETA\r\n", "", false},
 {"set gamma 0 10\r\nI am GAMMA\r\n", "", true},
-{"set theta 9 10 noreply\r\nI am THETA\r\n", "", false},
+{"set theta 6 10 noreply\r\nI am THETA\r\n", "", false},
 }
 ClientSpawner(t, testCases, n)
 // ---------- get theta ----------------------------------
+//time.Sleep(2 * time.Second)
 testCases = []TestCase {
 {"get theta\r\n", "VALUE 10\r\nI am THETA\r\n", true},
 }
@@ -130,33 +128,3 @@ testCases = []TestCase {
 }
 ClientSpawner(t, testCases, n)
 }
-/*
-func TestCase2(t *testing.T) {
-// Number of concurrent clients
-n := 5
-end_ch = make(chan int, n)
-range_ := 100
-testCases := make([]TestCase,range_)
-// ---------- set a number of keys having special characters ------------------------
-for i := 0; i<range_; i++ {
-numbytes := strconv.Itoa(10 + len(strconv.Itoa(i)))
-testCases[i] = TestCase{"set &&t!meR"+strconv.Itoa(i)+" 0 "+numbytes+"\r\nI am TIMER"+strconv.Itoa(i)+"\r\n", "", true}
-}
-ClientSpawner(t, testCases, n)
-// ---------- delete some of them ----------------------------------------------------
-l, r := 200, 800
-for i := l; i <= r; i++ {
-testCases[i] = TestCase{"delete &&t!meR"+strconv.Itoa(i) + "\r\n", "DELETED\r\n", true}
-}
-ClientSpawner(t, testCases, 1)
-// ---------- get the value of all the keys (even the delete ones) -------------------
-for i := 0; i<range_; i++ {
-if l <= i && i <= r {
-testCases[i] = TestCase{"get &&t!meR"+strconv.Itoa(i) + "\r\n", "ERR_NOT_FOUND\r\n", true}
-} else {
-numbytes := strconv.Itoa(10 + len(strconv.Itoa(i)))
-testCases[i] = TestCase{"get &&t!meR"+strconv.Itoa(i) + "\r\n", "VALUE " + numbytes + "\r\nI am TIMER"+strconv.Itoa(i)+"\r\n", true}
-}
-}
-ClientSpawner(t, testCases, 1)
-}*/
